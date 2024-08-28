@@ -1,24 +1,26 @@
-// Import the Ipv4Header from the tools::Ipv4 module
-mod tools;  // Include the tools module
-use tools::ipv4::Ipv4Header;
+// Run: sudo env "PATH=$HOME/.cargo/bin:$PATH" cargo build
 
 fn main() {
-    // Example IPv4 packet (first 20 bytes represent the IPv4 header)
-    let packet: [u8; 20] = [
-        0x45, 0x00, 0x00, 0x3c, 0x1c, 0x46, 0x40, 0x00,
-        0x40, 0x06, 0xb1, 0xe6, 0xc0, 0xa8, 0x00, 0x68,
-        0xc0, 0xa8, 0x00, 0x01
-    ];
+    // get the default Device
+    let device = pcap::Device::lookup()
+        .expect("device lookup failed")
+        .expect("no device available");
+    println!("Using device {}", device.name);
 
-    // Attempt to unpack the IPv4 header from the packet
-    match Ipv4Header::unpack(&packet) {
-        Ok(header) => {
-            // Print the unpacked header using the to_string method
-            println!("{}", Ipv4Header::to_string(&header));
-        },
-        Err(e) => {
-            // Handle the error (e.g., buffer too small)
-            eprintln!("Error unpacking IPv4 header: {}", e);
+    // Setup Capture
+    let mut cap = pcap::Capture::from_device(device)
+        .unwrap()
+        .immediate_mode(true)
+        .open()
+        .unwrap();
+
+    let mut count = 0;
+    cap.for_each(None, |packet| {
+        println!("Got {:?}", packet.header);
+        count += 1;
+        if count > 100 {
+            panic!("ow");
         }
-    }
+    })
+    .unwrap();
 }

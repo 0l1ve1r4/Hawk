@@ -1,7 +1,6 @@
 #[allow(dead_code)]
 pub const TCP_PROTOCOL_ID: u16 = 0x06;
 
-#[allow(dead_code)]
 pub struct TcpHeader {
     pub src_port: u16,
     pub dst_port: u16,

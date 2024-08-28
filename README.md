@@ -13,12 +13,11 @@ This is a rudimentary Rust Network Sniffer with these protocols:
 - TCP
 - UDP
 
-It must be run as root (because of [Layer 2](https://en.wikipedia.org/wiki/OSI_model) socket access) and only works on unix-like systems.
-
 ## Usage
 
 Basic usage:
 
 ```bash
-cargo run
+sudo env "PATH=$HOME/.cargo/bin:$PATH" cargo run
 ```
+> It must be run as root (because of [Layer 2](https://en.wikipedia.org/wiki/OSI_model) socket access) and only works on unix-like systems.
