@@ -1,5 +1,5 @@
 #[allow(dead_code)]
-pub const IPV4_PROTOCOL_ID: u16 = 0x0800; 
+pub const IPV4_PROTOCOL_ID: u8 = 0x08; 
 #[allow(dead_code)]
 
 pub struct Ipv4Header {

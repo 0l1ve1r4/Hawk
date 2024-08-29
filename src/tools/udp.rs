@@ -1,5 +1,5 @@
 #[allow(dead_code)]
-pub const UDP_PROTOCOL_ID: u16 = 0x11;
+pub const UDP_PROTOCOL_ID: u8 = 0x11;
 
 #[allow(dead_code)]
 pub struct UdpHeader {
