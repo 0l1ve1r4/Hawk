@@ -1,8 +1,11 @@
+#[allow(dead_code)]
+
 const ETHERTYPE_IP: u16 = 0x0800;
 
-struct EthernetHeader {
-    dest: [u8; 6],
-    src:  [u8; 6],
+#[allow(dead_code)]
+pub struct EthernetHeader {
+    pub dest: [u8; 6],
+    pub src:  [u8; 6],
     ethertype: u16,
 }
 
@@ -22,12 +25,4 @@ impl EthernetHeader {
         header
     }
 
-    pub fn print(header: &EthernetHeader) -> () { 
-        println!("Ethernet Header");
-        println!("  Destination: {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}",
-            header.dest[0], header.dest[1], header.dest[2], header.dest[3], header.dest[4], header.dest[5]);
-        println!("  Source: {:02x}:{:02x}:{:02x}:{:02x}:{:02x}:{:02x}", 
-            header.src[0], header.src[1], header.src[2], header.src[3], header.src[4], header.src[5]);
-        println!("  Ethertype: 0x{:04x}", header.ethertype);
-    }
 }

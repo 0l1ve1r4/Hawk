@@ -18,7 +18,7 @@ impl UdpHeader {
             checksum: u16::from_be_bytes([data[6], data[7]]),
         }
     }
-
+    #[allow(dead_code)]
     pub fn to_string(header: &UdpHeader) -> String {
         format!(
             "UDP Header:\n  Source Port: {}\n  Destination Port: {}\n  Length: {}\n  Checksum: 0x{:04x}",

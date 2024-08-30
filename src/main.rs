@@ -4,6 +4,9 @@ mod utils;
 mod tools;
 
 use eframe::egui;
+use std::thread;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 fn main() {
     let options = eframe::NativeOptions::default();
@@ -56,11 +59,29 @@ impl eframe::App for MyApp {
                 });
 
                 if ui.button("Run").clicked() {
-                    tools::functions::start_sniffing();
+                    let _ = OpenOptions::new()
+                    .write(true)      // Open in write mode
+                    .truncate(true)   // Truncate the file to zero length
+                    .open("src/tools/atomic.txt")
+                    .expect("file not found")
+                    .write(b"1");
+                    
+                    thread::spawn(|| {
+                        tools::functions::start_sniffing();
+                    });
+
                     self.insert_entry(TableEntry::default());
                 }
 
-                if ui.button("Stop").clicked() {}
+                if ui.button("Stop").clicked() {
+                    let _ = OpenOptions::new()
+                    .write(true)      // Open in write mode
+                    .truncate(true)   // Truncate the file to zero length
+                    .open("src/tools/atomic.txt")
+                    .expect("file not found")
+                    .write(b"0");
+
+                }
                 if ui.button("Clear").clicked() {}
                 if ui.button("Analysis").clicked() {}
             });

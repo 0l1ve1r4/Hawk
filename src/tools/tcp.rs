@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 pub const TCP_PROTOCOL_ID: u8 = 0x06;
-
+#[allow(dead_code)]
 pub struct TcpHeader {
     pub src_port: u16,
     pub dst_port: u16,
@@ -27,7 +27,7 @@ impl TcpHeader {
             urgent_pointer: u16::from_be_bytes([data[18], data[19]]),
         }
     }
-
+    #[allow(dead_code)]
     pub fn to_string(header: &TcpHeader) -> String {
         format!(
             "TCP Header:\n  Source Port: {}\n  Destination Port: {}\n  Sequence Number: {}\n  Acknowledgment Number: {}\n  Data Offset: {}\n  Flags: {}\n  Window Size: {}\n  Checksum: 0x{:04x}\n  Urgent Pointer: {}",
