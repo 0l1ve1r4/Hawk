@@ -1,90 +1,105 @@
-/* 
+// sudo env "PATH=$HOME/.cargo/bin:$PATH" cargo run
 
-This file is part of Hawk.
-
-Copyright (C) 2024 - Guilherme Santos
-
-This is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-Run 'sudo env "PATH=$HOME/.cargo/bin:$PATH" cargo build' to compile the project.
-Run 'sudo env "PATH=$HOME/.cargo/bin:$PATH" cargo run' to run the project.
-
-sudo needs to be used because the program needs to access the network interface.
-
-*/
-
-mod tools;
 mod utils;
+mod tools;
 
-use tools::{ipv4::IPV4_PROTOCOL_ID, tcp};
-use tools::tcp::TCP_PROTOCOL_ID;
-use tools::udp;
+use eframe::egui;
 
-use pcap::{Capture, Device, Packet};
-use tools::udp::UDP_PROTOCOL_ID;
+fn main() {
+    let options = eframe::NativeOptions::default();
+    let _ = eframe::run_native(
+        "Hawk - Network Analyzer",
+        options,
+        Box::new(|_cc| Ok(Box::new(MyApp::default()))),
+    );
 
-fn handle_package(packet: &Packet) {
-    // Ensure packet.data is long enough before accessing indices
-    if packet.data.len() < 24 {
-        eprintln!("Packet too short");
-        return;
-    }
-    
-    // Check for IP packets (IPv4 and IPv6)
-    if packet.data[12] == IPV4_PROTOCOL_ID {
-        let header = tools::ipv4::Ipv4Header::unpack(&packet.data[14..]);
-        let string_h = tools::ipv4::Ipv4Header::to_string(&header.unwrap());    
-        println!("{}", string_h);
+}
 
-        // Check for UDP (0x11) or TCP (0x06) protocol
-        match packet.data[23] {
-            UDP_PROTOCOL_ID => {
-                let header = udp::UdpHeader::unpack(&packet.data);
-                let string_h = udp::UdpHeader::to_string(&header);
-                println!("{}", string_h);
-            }
-            TCP_PROTOCOL_ID => {
-                let header = tcp::TcpHeader::unpack(&packet.data);
-                let string_h = tcp::TcpHeader::to_string(&header);
-                println!("{}", string_h);
-            }
-            _ => {
-                utils::debug("Other protocol", utils::LogLevel::Warning);
-            }
+
+#[derive(Default)]
+pub struct MyApp {
+    counter: i32,
+    data: Vec<TableEntry>,
+}
+
+pub struct TableEntry {
+    dest_mac: String,
+    src_mac: String,
+    src_ip: String,
+    dest_ip: String,
+    port: u16,
+    protocol: String,
+    payload_length: usize,
+}
+
+impl Default for TableEntry {
+    fn default() -> Self {
+        Self {
+            dest_mac: "00:11:22:33:44:55".into(),
+            src_mac: "66:77:88:99:AA:BB".into(),
+            src_ip: "192.168.1.1".into(),
+            dest_ip: "192.168.1.2".into(),
+            port: 80,
+            protocol: "TCP".into(),
+            payload_length: 512,
         }
     }
 }
 
-fn main() {
-    // Get the default Device
-    let device = Device::lookup()
-        .expect("device lookup failed")
-        .expect("no device available");
-    println!("Using device {}", device.name);
+impl eframe::App for MyApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+            egui::menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Open").clicked() {}
+                    if ui.button("Save").clicked() {}
+                });
 
-    // Setup Capture
-    let mut cap = Capture::from_device(device)
-        .expect("failed to create capture")
-        .immediate_mode(true)
-        .open()
-        .expect("failed to open capture");
+                if ui.button("Run").clicked() {
+                    tools::functions::start_sniffing();
+                    self.insert_entry(TableEntry::default());
+                }
 
-    let mut count: i32 = 0;
-    cap.for_each(None, |packet| {
-        handle_package(&packet);
-        count += 1;
-        if count > 100 {
-            utils::debug("Stopping packet capture", utils::LogLevel::Debug);
-            panic!();
-        }
-    })
-    .expect("failed during packet capture");
+                if ui.button("Stop").clicked() {}
+                if ui.button("Clear").clicked() {}
+                if ui.button("Analysis").clicked() {}
+            });
+        });
+
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("Packet Information Table");
+
+            egui::Grid::new("packet_table")
+                .striped(true)
+                .min_col_width(100.0)
+                .show(ui, |ui| {
+                    ui.label("Dest MAC");
+                    ui.label("Src MAC");
+                    ui.label("Src IP");
+                    ui.label("Dest IP");
+                    ui.label("Port");
+                    ui.label("Protocol");
+                    ui.label("Payload Length");
+                    ui.end_row();
+
+                    for entry in &self.data {
+                        ui.label(&entry.dest_mac);
+                        ui.label(&entry.src_mac);
+                        ui.label(&entry.src_ip);
+                        ui.label(&entry.dest_ip);
+                        ui.label(entry.port.to_string());
+                        ui.label(&entry.protocol);
+                        ui.label(entry.payload_length.to_string());
+                        ui.end_row();
+                    }
+                });
+        });
+    }
+}
+
+impl MyApp {
+    fn insert_entry(&mut self, entry: TableEntry) {
+        self.data.push(entry);
+        self.counter += 1;
+    }
 }
