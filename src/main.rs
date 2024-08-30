@@ -2,11 +2,14 @@
 
 mod utils;
 mod tools;
+mod table;
 
 use eframe::egui;
 use std::thread;
 use std::fs::OpenOptions;
 use std::io::Write;
+
+use table::table::TableEntry;
 
 fn main() {
     let options = eframe::NativeOptions::default();
@@ -15,38 +18,12 @@ fn main() {
         options,
         Box::new(|_cc| Ok(Box::new(MyApp::default()))),
     );
-
 }
-
 
 #[derive(Default)]
 pub struct MyApp {
     counter: i32,
     data: Vec<TableEntry>,
-}
-
-pub struct TableEntry {
-    dest_mac: String,
-    src_mac: String,
-    src_ip: String,
-    dest_ip: String,
-    port: u16,
-    protocol: String,
-    payload_length: usize,
-}
-
-impl Default for TableEntry {
-    fn default() -> Self {
-        Self {
-            dest_mac: "00:11:22:33:44:55".into(),
-            src_mac: "66:77:88:99:AA:BB".into(),
-            src_ip: "192.168.1.1".into(),
-            dest_ip: "192.168.1.2".into(),
-            port: 80,
-            protocol: "TCP".into(),
-            payload_length: 512,
-        }
-    }
 }
 
 impl eframe::App for MyApp {
@@ -70,7 +47,6 @@ impl eframe::App for MyApp {
                         tools::functions::start_sniffing();
                     });
 
-                    self.insert_entry(TableEntry::default());
                 }
 
                 if ui.button("Stop").clicked() {
@@ -82,8 +58,19 @@ impl eframe::App for MyApp {
                     .write(b"0");
 
                 }
-                if ui.button("Clear").clicked() {}
-                if ui.button("Analysis").clicked() {}
+
+                if ui.button("Clear").clicked() {
+                    self.data.clear();
+                    self.counter = 0;
+                }
+
+                if ui.button("Analysis").clicked() {
+                    let entries = TableEntry::read_table_entries("src/tools/packages.txt");
+                    for entry in entries {
+                        self.insert_entry(entry);
+                    }
+
+                }
             });
         });
 
