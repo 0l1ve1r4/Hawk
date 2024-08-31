@@ -64,13 +64,21 @@ impl eframe::App for MyApp {
                     self.counter = 0;
                 }
 
-                if ui.button("Analysis").clicked() {
-                    let entries = TableEntry::read_table_entries("src/tools/packages.txt");
-                    for entry in entries {
-                        self.insert_entry(entry);
+                ui.menu_button("Results", |ui| {
+                    if ui.button("Show Results").clicked() {
+                        let entries = TableEntry::read_table_entries("src/tools/packages.txt");
+                        for entry in entries {
+                            self.insert_entry(entry);
+                            if self.counter > 30 {
+                                break;
+                            }
+    
+                        }
                     }
 
-                }
+                    if ui.button("Next Page").clicked() {}
+                    if ui.button("Previous Page").clicked() {}
+                });
             });
         });
 

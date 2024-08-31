@@ -1,25 +1,44 @@
-> Warnings:
-> 
->  - This project is in its early stages, be careful.
->
->  - Only run this code in a network you personally own and control.  
-
 # Hawk Network Sniffer
 
-This is a rudimentary Rust Network Sniffer with these protocols:
+Hawk is a basic Rust-based network sniffer supporting:
 
-- Ethernet II 
-- IPv4 
+- Ethernet II
+- IPv4
 - TCP
 - UDP
 
-## Usage
+## Warnings
 
-Basic usage:
+- This project is in its early stages. Use with caution.
+- Only run this code in a network you personally own and control.
+
+---
+
+# Usage
+
+## Build/Run Usage
+
+### Basic
+
+To run the sniffer:
 
 ```bash
 sudo env "PATH=$HOME/.cargo/bin:$PATH" cargo run
 ```
-> It must be run as root (because of [Layer 2](https://en.wikipedia.org/wiki/OSI_model) socket access) and only works on unix-like systems.
 
-**Click run to start packet capture, when stopped, click "analysis" to check the captured packets.**
+> **Warning:** Running as root is required for Layer 2 socket access.
+
+### Without Root
+
+You can avoid running as root by using:
+
+```bash
+chmod +x ./build.sh
+./build.sh
+```
+
+## Application GUI Usage
+
+**Click "Run" to start packet capture. After stopping, click "Analysis" to review captured packets.**
+
+---

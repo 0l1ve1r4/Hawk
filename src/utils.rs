@@ -20,6 +20,5 @@ pub fn debug(message: &str, log_level: LogLevel) {
         LogLevel::Error => RED_ANSI,
     };
 
-    // Print the message with color and reset ANSI code
     println!("{}{}{}", color, message, RESET_ANSI);
 }

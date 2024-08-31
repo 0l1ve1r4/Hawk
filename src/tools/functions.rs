@@ -18,6 +18,17 @@ fn write_to_file(data: &str) {
     }
 }
 
+fn clear_file() {
+    if let Err(e) = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open("src/tools/packages.txt")
+        .and_then(|mut file| file.write_all(b""))
+    {
+        eprintln!("Failed to clear file: {}", e);
+    }
+}
+
 fn handle_packet(packet: &Packet) {
     use crate::tools::{
         ethernet::EthernetHeader, 
@@ -80,19 +91,13 @@ fn handle_packet(packet: &Packet) {
     ));
 }
 
-pub fn print_file() {
-    let mut file = File::open("src/tools/packages.txt").expect("file not found");
-    let mut buf = Vec::new();
-    file.read_to_end(&mut buf).expect("failed to read file");
-    println!("File content: {:?}", String::from_utf8_lossy(&buf));
-}
-
 pub fn start_sniffing() {
     let device = Device::lookup()
         .expect("device lookup failed")
         .expect("no device available");
 
     println!("Using device {}", device.name);
+    clear_file();
 
     let mut cap = Capture::from_device(device)
         .expect("failed to create capture")
@@ -110,7 +115,6 @@ pub fn start_sniffing() {
             file.read_exact(&mut buf).expect("failed to read file");
 
             if &buf == b"0" {
-                print_file();
                 panic!("Stop requested by communication channel"); 
             }
         }) {
