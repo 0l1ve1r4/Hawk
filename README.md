@@ -4,6 +4,7 @@ Hawk is a basic Rust-based network sniffer supporting:
 
 - Ethernet II
 - IPv4
+- IPv6
 - TCP
 - UDP
 

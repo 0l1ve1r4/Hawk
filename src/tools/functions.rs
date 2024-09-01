@@ -1,109 +1,105 @@
 use pcap::{Capture, Device, Packet};
-use std::fs::{File, OpenOptions};
-use std::io::{Read, Write};
+use std::fs::File;
+use std::io::Read;
 
-use crate::tools::ipv4::IPV4_PROTOCOL_ID;
-use crate::tools::tcp::TCP_PROTOCOL_ID;
-use crate::tools::udp::UDP_PROTOCOL_ID;
+use crate::utils::{
+    debug,
+    LogLevel
+};
 
-fn write_to_file(data: &str) {
-    if let Err(e) = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .create(true)
-        .open("src/tools/packages.txt")
-        .and_then(|mut file| file.write_all(data.as_bytes()))
-    {
-        eprintln!("Failed to write to file: {}", e);
-    }
-}
-
-fn clear_file() {
-    if let Err(e) = OpenOptions::new()
-        .write(true)
-        .truncate(true)
-        .open("src/tools/packages.txt")
-        .and_then(|mut file| file.write_all(b""))
-    {
-        eprintln!("Failed to clear file: {}", e);
-    }
-}
+use crate::tools::{
+    ipv4::IPV4_PROTOCOL_ID, 
+    ipv6::IPV6_PROTOCOL_ID, 
+    tcp::TCP_PROTOCOL_ID, tcp::TcpHeader,
+    udp::UDP_PROTOCOL_ID, udp::UdpHeader,
+    package_data::PacketData,
+    ethernet::EthernetHeader,    
+    utils::{get_mac, format_ip},
+    ipv4::Ipv4Header, 
+    ipv6::Ipv6Header,
+};
 
 fn handle_packet(packet: &Packet) {
-    use crate::tools::{
-        ethernet::EthernetHeader, 
-        utils::{get_mac, format_ip}, 
-        ipv4::Ipv4Header, 
-        udp::UdpHeader, 
-        tcp::TcpHeader,
-    };
-
-    let ethernet_header = EthernetHeader::unpack(&packet.data);  
-    let (dest_mac, src_mac) = (
-        get_mac(ethernet_header.dest),
-        get_mac(ethernet_header.src),
-    );
-
     if packet.data.len() < 24 {
         eprintln!("Packet too short");
         return;
     }
 
-    let mut protocol = String::new();
-    let mut src_ip = String::new();
-    let mut dest_ip = String::new();
-    let mut port = 0;
-    let mut payload_length = 0;
+    let ethernet_header: EthernetHeader = EthernetHeader::unpack(&packet.data);  
+    let mut data: PacketData = PacketData::new();
+    
+    data.src_mac = get_mac(ethernet_header.src);
+    data.dest_mac = get_mac(ethernet_header.dest);
 
-    if packet.data[12] == IPV4_PROTOCOL_ID {
-        match Ipv4Header::unpack(&packet.data[14..]) {
-            Ok(ipv4_header) => {
-                src_ip = format_ip(ipv4_header.src);
-                dest_ip = format_ip(ipv4_header.dst);
-                payload_length = ipv4_header.length;
-
-                match packet.data[23] {
-                    UDP_PROTOCOL_ID => {
-                        let udp_header = UdpHeader::unpack(&packet.data);
-                        protocol = "IPv4/UDP".to_string();
-                        port = udp_header.src_port;
-                    }
-                    TCP_PROTOCOL_ID => {
-                        let tcp_header = TcpHeader::unpack(&packet.data);
-                        protocol = "IPv4/TCP".to_string();
-                        port = tcp_header.src_port;
-                    }
-                    _ => {
-                        crate::utils::debug("Other protocol", crate::utils::LogLevel::Debug);
-                    }
-                }
-            }
-            Err(e) => {
-                eprintln!("Failed to unpack IPv4 header: {}", e);
-                return;
-            }
-        }
+    match packet.data[12] {
+        IPV4_PROTOCOL_ID => handle_ip_packet(&packet.data[14..], &mut data, true),
+        IPV6_PROTOCOL_ID => handle_ip_packet(&packet.data[14..], &mut data, false),
+        _ => eprintln!("Unknown protocol"),
     }
 
-    write_to_file(&format!(
-        "{},{},{},{},{},{},{}\n",
-        dest_mac, src_mac, src_ip, dest_ip, port, protocol, payload_length
-    ));
+    data.write();
+}
+
+fn handle_ip_packet(ip_data: &[u8], data: &mut PacketData, is_ipv4: bool) {
+    if is_ipv4 {
+        match Ipv4Header::unpack(ip_data) {
+            Ok(ipv4_header) => {
+                data.src_ip = format_ip(ipv4_header.src);
+                data.dest_ip = format_ip(ipv4_header.dst);
+                data.payload_length = ipv4_header.length;
+
+                match ip_data[9] {
+                    UDP_PROTOCOL_ID => unpack_udp(ip_data, data, "IPv4/UDP"),
+                    TCP_PROTOCOL_ID => unpack_tcp(ip_data, data, "IPv4/TCP"),
+                    _ => debug("Other protocol", LogLevel::Debug),
+                }
+            }
+            Err(e) => eprintln!("Failed to unpack IPv4 header: {}", e),
+        }
+    } else {
+        match Ipv6Header::unpack(ip_data) {
+            Ok(ipv6_header) => {
+                data.src_ip = ipv6_header.src.iter().map(|&b| format!("{:02x}", b)).collect::<String>();
+                data.dest_ip = ipv6_header.dst.iter().map(|&b| format!("{:02x}", b)).collect::<String>();
+                data.payload_length = ipv6_header.payload_length;
+
+                match ip_data[6] { // In IPv6, the next header is at position 6
+                    UDP_PROTOCOL_ID => unpack_udp(ip_data, data, "IPv6/UDP"),
+                    TCP_PROTOCOL_ID => unpack_tcp(ip_data, data, "IPv6/TCP"),
+                    _ => debug("Other protocol", LogLevel::Debug),
+                }
+            }
+            Err(e) => eprintln!("Failed to unpack IPv6 header: {}", e),
+        }
+    }
+}
+
+fn unpack_udp(ip_data: &[u8], data: &mut PacketData, protocol: &str) {
+    let udp_header = UdpHeader::unpack(ip_data);
+    data.protocol = protocol.to_string();
+    data.port = udp_header.src_port;
+}
+
+fn unpack_tcp(ip_data: &[u8], data: &mut PacketData, protocol: &str) {
+    let tcp_header = TcpHeader::unpack(ip_data);
+    data.protocol = protocol.to_string();
+    data.port = tcp_header.src_port;
 }
 
 pub fn start_sniffing() {
+    crate::tools::package_data::clear_file();
+
     let device = Device::lookup()
-        .expect("device lookup failed")
-        .expect("no device available");
+        .expect("Device lookup failed")
+        .expect("No device available");
 
     println!("Using device {}", device.name);
-    clear_file();
 
     let mut cap = Capture::from_device(device)
-        .expect("failed to create capture")
+        .expect("Failed to create capture")
         .immediate_mode(true)
         .open()
-        .expect("failed to open capture");
+        .expect("Failed to open capture");
 
     let mut buf = [0u8; 1];
 
@@ -111,11 +107,11 @@ pub fn start_sniffing() {
         if let Err(e) = cap.for_each(None, |packet| {
             handle_packet(&packet);
 
-            let mut file = File::open("src/tools/atomic.txt").expect("file not found");
-            file.read_exact(&mut buf).expect("failed to read file");
+            let mut file = File::open("src/tools/atomic.txt").expect("File not found");
+            file.read_exact(&mut buf).expect("Failed to read file");
 
-            if &buf == b"0" {
-                panic!("Stop requested by communication channel"); 
+            if buf[0] == b'0' {
+                panic!("Stop requested by communication channel");
             }
         }) {
             eprintln!("Error during packet capture: {}", e);
@@ -123,3 +119,4 @@ pub fn start_sniffing() {
         }
     }
 }
+ 
