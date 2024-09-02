@@ -24,6 +24,7 @@ fn main() {
 pub struct MyApp {
     counter: i32,
     data: Vec<TableEntry>,
+    is_running: bool,
 }
 
 impl eframe::App for MyApp {
@@ -43,6 +44,7 @@ impl eframe::App for MyApp {
                     .expect("file not found")
                     .write(b"1");
                     
+                    self.is_running = true;
                     thread::spawn(|| {
                         tools::functions::start_sniffing();
                     });
@@ -56,7 +58,16 @@ impl eframe::App for MyApp {
                     .open("src/tools/atomic.txt")
                     .expect("file not found")
                     .write(b"0");
-
+                
+                    self.is_running = false;
+                    let entries = TableEntry::read_table_entries("src/tools/packages.txt");
+                        for entry in entries {
+                            self.insert_entry(entry);
+                            if self.counter > 30 {
+                                break;
+                            }
+    
+                        }
                 }
 
                 if ui.button("Clear").clicked() {
@@ -76,40 +87,47 @@ impl eframe::App for MyApp {
                         }
                     }
 
-                    if ui.button("Next Page").clicked() {}
-                    if ui.button("Previous Page").clicked() {}
                 });
             });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.heading("Packet Information Table");
-
-            egui::Grid::new("packet_table")
-                .striped(true)
-                .min_col_width(100.0)
-                .show(ui, |ui| {
-                    ui.label("Dest MAC");
-                    ui.label("Src MAC");
-                    ui.label("Src IP");
-                    ui.label("Dest IP");
-                    ui.label("Port");
-                    ui.label("Protocol");
-                    ui.label("Payload Length");
-                    ui.end_row();
-
-                    for entry in &self.data {
-                        ui.label(&entry.dest_mac);
-                        ui.label(&entry.src_mac);
-                        ui.label(&entry.src_ip);
-                        ui.label(&entry.dest_ip);
-                        ui.label(entry.port.to_string());
-                        ui.label(&entry.protocol);
-                        ui.label(entry.payload_length.to_string());
+        
+            // Wrap the grid in a ScrollArea
+            egui::ScrollArea::vertical().show(ui, |ui| {
+                egui::Grid::new("packet_table")
+                    .striped(true)
+                    .min_col_width(100.0)
+                    .show(ui, |ui| {
+                        ui.label("Dest MAC");
+                        ui.label("Src MAC");
+                        ui.label("Src IP");
+                        ui.label("Dest IP");
+                        ui.label("Port");
+                        ui.label("Protocol");
+                        ui.label("Payload Length");
                         ui.end_row();
-                    }
-                });
+        
+                        for entry in &self.data {
+                            ui.label(&entry.dest_mac);
+                            ui.label(&entry.src_mac);
+                            ui.label(&entry.src_ip);
+                            ui.label(&entry.dest_ip);
+                            ui.label(entry.port.to_string());
+                            ui.label(&entry.protocol);
+                            ui.label(entry.payload_length.to_string());
+                            ui.end_row();
+                        }
+                    });
+            });
         });
+
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
+            ui.checkbox(&mut self.is_running, "Is running ?");
+        
+        });
+        
     }
 }
 

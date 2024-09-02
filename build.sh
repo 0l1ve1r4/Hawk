@@ -1,13 +1,49 @@
 #!/bin/bash
 
-# Build the project in release mode
-cargo build --release
+ARG1="${1:-default}"
+PATH_TO_EXEC="target/release/Hawk"
 
-# Set network capabilities to the binary
-sudo setcap cap_net_raw,cap_net_admin=eip target/release/Hawk
+release(){
+    cargo build --release
+}
 
-# Verify the capabilities
-getcap target/release/Hawk
+no_release(){
+    cargo build
+}
 
-# Run the binary
-exec ./target/release/Hawk
+add_privileges(){
+    sudo setcap cap_net_raw,cap_net_admin=eip "$PATH_TO_EXEC"
+    # getcap "$PATH_TO_EXEC"
+}
+
+run(){
+    "$PATH_TO_EXEC"
+}
+
+usage(){
+    echo "Usage: $0 [release | no-release | run]"
+    echo ""
+    echo "--release: Build and run in release mode and run"
+    echo "--no-release: Build and run in debug mode and run"
+    exit 1
+}   
+
+main (){
+    if [ "$ARG1" == "--release" ]; then
+        release
+        PATH_TO_EXEC="target/release/Hawk"
+        add_privileges
+        run
+
+    elif [ "$ARG1" == "--no-release" ]; then
+        no_release
+        PATH_TO_EXEC="target/debug/Hawk"  # Adjust to ensure correct path
+        add_privileges
+        run
+
+    else
+        usage
+    fi
+}
+
+main

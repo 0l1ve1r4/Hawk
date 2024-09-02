@@ -107,11 +107,9 @@ pub fn start_sniffing() {
         if let Err(e) = cap.for_each(None, |packet| {
             handle_packet(&packet);
 
-            let mut file = File::open("src/tools/atomic.txt").expect("File not found");
-            file.read_exact(&mut buf).expect("Failed to read file");
-
-            if buf[0] == b'0' {
-                panic!("Stop requested by communication channel");
+            if let Err(e) = check_stop_condition("src/tools/atomic.txt", &mut buf) {
+                eprintln!("Error during stop condition check: {}", e);
+                return;
             }
         }) {
             eprintln!("Error during packet capture: {}", e);
@@ -119,4 +117,14 @@ pub fn start_sniffing() {
         }
     }
 }
- 
+
+fn check_stop_condition(file_path: &str, buf: &mut [u8]) -> Result<(), String> {
+    let mut file = File::open(file_path).map_err(|e| format!("File not found: {}", e))?;
+    file.read_exact(buf).map_err(|e| format!("Failed to read file: {}", e))?;
+    
+    if buf[0] == b'0' {
+        panic!("Stop requested by communication channel");
+    }
+
+    Ok(())
+}
