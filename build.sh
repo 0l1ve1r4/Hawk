@@ -21,7 +21,7 @@ run(){
 }
 
 usage(){
-    echo "Usage: $0 [release | no-release | run]"
+    echo "Usage: $0 [release | no-release]"
     echo ""
     echo "--release: Build and run in release mode and run"
     echo "--no-release: Build and run in debug mode and run"

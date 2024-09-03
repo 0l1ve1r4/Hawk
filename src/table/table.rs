@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::{self, BufRead};
 
+#[derive(PartialEq)]
 pub struct TableEntry {
     pub dest_mac: String,
     pub src_mac: String,

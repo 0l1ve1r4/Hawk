@@ -59,8 +59,21 @@ fn handle_ip_packet(ip_data: &[u8], data: &mut PacketData, is_ipv4: bool) {
     } else {
         match Ipv6Header::unpack(ip_data) {
             Ok(ipv6_header) => {
-                data.src_ip = ipv6_header.src.iter().map(|&b| format!("{:02x}", b)).collect::<String>();
-                data.dest_ip = ipv6_header.dst.iter().map(|&b| format!("{:02x}", b)).collect::<String>();
+                data.src_ip = ipv6_header.src.iter()
+                .map(|&b| format!("{:02x}", b))
+                .collect::<Vec<String>>()
+                .chunks(2)
+                .map(|chunk| chunk.join(""))
+                .collect::<Vec<String>>()
+                .join(":");
+            
+            data.dest_ip = ipv6_header.dst.iter()
+                .map(|&b| format!("{:02x}", b))
+                .collect::<Vec<String>>()
+                .chunks(2)
+                .map(|chunk| chunk.join(""))
+                .collect::<Vec<String>>()
+                .join(":");
                 data.payload_length = ipv6_header.payload_length;
 
                 match ip_data[6] { // In IPv6, the next header is at position 6

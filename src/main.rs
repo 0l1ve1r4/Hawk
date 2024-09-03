@@ -48,7 +48,6 @@ impl eframe::App for MyApp {
                     thread::spawn(|| {
                         tools::functions::start_sniffing();
                     });
-
                 }
 
                 if ui.button("Stop").clicked() {
@@ -60,34 +59,13 @@ impl eframe::App for MyApp {
                     .write(b"0");
                 
                     self.is_running = false;
-                    let entries = TableEntry::read_table_entries("src/tools/packages.txt");
-                        for entry in entries {
-                            self.insert_entry(entry);
-                            if self.counter > 30 {
-                                break;
-                            }
-    
-                        }
+                    self.show_results();
                 }
 
                 if ui.button("Clear").clicked() {
                     self.data.clear();
                     self.counter = 0;
                 }
-
-                ui.menu_button("Results", |ui| {
-                    if ui.button("Show Results").clicked() {
-                        let entries = TableEntry::read_table_entries("src/tools/packages.txt");
-                        for entry in entries {
-                            self.insert_entry(entry);
-                            if self.counter > 30 {
-                                break;
-                            }
-    
-                        }
-                    }
-
-                });
             });
         });
 
@@ -136,4 +114,18 @@ impl MyApp {
         self.data.push(entry);
         self.counter += 1;
     }
+
+    fn show_results(&mut self) {
+            let entries = TableEntry::read_table_entries("src/tools/packages.txt");
+            for entry in entries {
+                if !self.data.contains(&entry) {
+                    self.insert_entry(entry);
+    
+    
+                }
+            } 
+        }
+
+
 }
+

@@ -10,7 +10,8 @@ Hawk is a basic Rust-based network sniffer supporting:
 
 ## Warnings
 
-- This project is in its early stages. Use with caution.
+- This is a simple project, for professional use, I recommend looking for other tools. 
+
 - Only run this code in a network you personally own and control.
 
 ---
@@ -40,6 +41,4 @@ chmod +x ./build.sh
 
 ## Application GUI Usage
 
-**Click "Run" to start packet capture. After stopping, click "Analysis" to review captured packets.**
-
----
+**Click "Run" to start packet capture**
