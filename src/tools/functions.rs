@@ -34,7 +34,7 @@ fn handle_packet(packet: &Packet) {
     match packet.data[12] {
         IPV4_PROTOCOL_ID => handle_ip_packet(&packet.data[14..], &mut data, true),
         IPV6_PROTOCOL_ID => handle_ip_packet(&packet.data[14..], &mut data, false),
-        _ => eprintln!("Unknown protocol"),
+        _ => debug("Unknown Protocol", LogLevel::Debug),
     }
 
     data.write();
@@ -51,7 +51,7 @@ fn handle_ip_packet(ip_data: &[u8], data: &mut PacketData, is_ipv4: bool) {
                 match ip_data[9] {
                     UDP_PROTOCOL_ID => unpack_udp(ip_data, data, "IPv4/UDP"),
                     TCP_PROTOCOL_ID => unpack_tcp(ip_data, data, "IPv4/TCP"),
-                    _ => debug("Other protocol", LogLevel::Debug),
+                    _ => unpack_unknown(data, "Unknown IPV4"),
                 }
             }
             Err(e) => eprintln!("Failed to unpack IPv4 header: {}", e),
@@ -79,12 +79,17 @@ fn handle_ip_packet(ip_data: &[u8], data: &mut PacketData, is_ipv4: bool) {
                 match ip_data[6] { // In IPv6, the next header is at position 6
                     UDP_PROTOCOL_ID => unpack_udp(ip_data, data, "IPv6/UDP"),
                     TCP_PROTOCOL_ID => unpack_tcp(ip_data, data, "IPv6/TCP"),
-                    _ => debug("Other protocol", LogLevel::Debug),
+                    _ => unpack_unknown(data, "Unknown IPV6"),
                 }
             }
             Err(e) => eprintln!("Failed to unpack IPv6 header: {}", e),
         }
     }
+}
+
+fn unpack_unknown(data: &mut PacketData, protocol: &str) {
+    data.protocol = protocol.to_string();
+    data.port = 0;
 }
 
 fn unpack_udp(ip_data: &[u8], data: &mut PacketData, protocol: &str) {

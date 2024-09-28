@@ -5,9 +5,14 @@ mod tools;
 mod table;
 
 use eframe::egui;
-use std::thread;
-use std::fs::OpenOptions;
-use std::io::Write;
+
+
+use std::{
+    thread, 
+    fs::OpenOptions, 
+    io::Write, 
+};
+
 
 use table::table::TableEntry;
 
@@ -59,7 +64,6 @@ impl eframe::App for MyApp {
                     .write(b"0");
                 
                     self.is_running = false;
-                    self.show_results();
                 }
 
                 if ui.button("Clear").clicked() {
@@ -104,6 +108,11 @@ impl eframe::App for MyApp {
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             ui.checkbox(&mut self.is_running, "Is running ?");
         
+            if self.is_running {
+                self.show_results();
+            }
+
+
         });
         
     }
@@ -125,7 +134,5 @@ impl MyApp {
                 }
             } 
         }
-
-
 }
 
