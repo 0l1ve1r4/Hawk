@@ -1,44 +1,26 @@
-# Hawk Network Sniffer
+<div align="center">
+  <img src="res/logo.png" alt="Hawk-Logo" style="width: 30%;">
 
-Hawk is a basic Rust-based network sniffer supporting:
+<p align="center">
+    <strong>Open-source Network Sniffer.</strong>
+  </p>
 
-- Ethernet II
-- IPv4
-- IPv6
-- TCP
-- UDP
+<hr>
 
-## Warnings
+  ![Commit activity](https://img.shields.io/github/commit-activity/m/iyksh/Hawk)
+  ![GitHub top language](https://img.shields.io/github/languages/top/iyksh/Hawk?logo=python&label=)
+  [![GitHub license](https://img.shields.io/github/license/iyksh/Hawk)](https://github.com/iyksh/Hawk/LICENSE)
+  [![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg)](./res/README_PTBR.md)
 
-- This is a simple project, for professional use, I recommend looking for other tools. 
+</div>
 
-- Only run this code in a network you personally own and control.
+## Usage
 
----
-
-# Usage
-
-## Build/Run Usage
-
-### Basic
-
-To run the sniffer:
-
-```bash
-sudo env "PATH=$HOME/.cargo/bin:$PATH" cargo run
-```
-
-> **Warning:** Running as root is required for Layer 2 socket access.
-
-### Without Root
-
-You can avoid running as root by using:
+### Build/Run Usage
 
 ```bash
 chmod +x ./build.sh
-./build.sh
+./build.sh --release
 ```
 
-## Application GUI Usage
-
-**Click "Run" to start packet capture**
+> **Warning:** Running as root is required for Layer 2 socket access.
